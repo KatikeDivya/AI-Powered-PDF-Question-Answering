@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI PDF Assistant</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>AI PDF Question Answering System</h1>
+    <p>Upload your PDF and ask questions using AI.</p>
+
+    <div class="upload-box">
+
+        <h3>Upload your PDF</h3>
+
+        <input type="file" id="pdfFile" accept=".pdf">
+
+        <button onclick="uploadPDF()">Upload PDF</button>
+
+        <p id="uploadStatus"></p>
+
+    </div>
+
+    <div class="chat-box">
+
+        <h3>Chat with your PDF</h3>
+
+        <div id="chatMessages"></div>
+
+        <div class="chat-input">
+
+            <input type="text"
+                   id="question"
+                   placeholder="Ask a question about your PDF">
+
+            <button onclick="askQuestion()">Send</button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+async function uploadPDF() {
+
+    const file = document.getElementById("pdfFile").files[0];
+
+    if (!file) {
+        alert("Please select a PDF first.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("pdf", file);
+
+    document.getElementById("uploadStatus").innerText =
+        "Processing PDF...";
+
+    try {
+        const response = await fetch("/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        document.getElementById("uploadStatus").innerText =
+            data.message || data.error;
+
+    } catch (error) {
+        document.getElementById("uploadStatus").innerText =
+            "Upload failed. Please try again.";
+    }
+}
+
+
+async function askQuestion() {
+
+    const input = document.getElementById("question");
+    const question = input.value.trim();
+
+    if (!question) return;
+
+    addMessage("You: " + question);
+
+    input.value = "";
+
+    addMessage("AI: Thinking...");
+
+    try {
+        const response = await fetch("/ask", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ question: question })
+        });
+
+        const data = await response.json();
+
+        const messages = document.getElementById("chatMessages");
+        messages.lastElementChild.innerText =
+            "AI: " + (data.answer || data.error);
+
+    } catch (error) {
+        const messages = document.getElementById("chatMessages");
+        messages.lastElementChild.innerText =
+            "AI: Something went wrong.";
+    }
+}
+
+
+function addMessage(message) {
+
+    const messages = document.getElementById("chatMessages");
+
+    const paragraph = document.createElement("p");
+    paragraph.innerText = message;
+
+    messages.appendChild(paragraph);
+}
+
+</script>
+
+</body>
+</html>
